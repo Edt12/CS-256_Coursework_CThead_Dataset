@@ -12,8 +12,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.Scene;
 import javafx.scene.layout.*;
 import javafx.scene.control.Slider;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;  
+import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.paint.Color;
@@ -24,7 +23,9 @@ public class test extends Application {
 	float grey[][][]; //store the 3D volume data set converted to 0-1 ready to copy to the image
 	short min, max; //min/max value in the 3D volume data set
 
-	int currZSlice=128;
+	int currZSlice = 128;
+	int currYSlice = 128;
+	int currXSlice = 128;
 
     @Override
     public void start(Stage stage) throws FileNotFoundException {
@@ -52,7 +53,8 @@ public class test extends Application {
 
 		//Create the simple GUI
 		Slider sliceZSlider = new Slider(0, 255, currZSlice);
-		
+
+
 		sliceZSlider.valueProperty().addListener(new ChangeListener<Number>() { 
 			public void changed(ObservableValue <? extends Number >  
 					observable, Number oldValue, Number newValue) { 
@@ -66,15 +68,56 @@ public class test extends Application {
         });		
 
 		//Add all the GUI elements
+		WritableImage frontImage = new WritableImage(256,256);
+		GetYSlice(currYSlice, frontImage);
+		Slider sliceYSlider = new Slider(0,255,currYSlice);
+
+		sliceYSlider.valueProperty().addListener(new ChangeListener<Number>() {
+			public void changed(ObservableValue <? extends Number >
+										observable, Number oldValue, Number newValue) {
+
+				currYSlice = newValue.intValue();
+				//System.out.println(currZSlice);
+				//We update our Image
+				GetYSlice(currYSlice,frontImage); //go get the slice image
+				//Because sliceZView (an ImageView) is linked to it, this will automatically update the displayed image in the GUI
+			}
+		});
+
+		WritableImage sideImage = new WritableImage(256,256);
+		GetXSlice(currXSlice,sideImage);
+		Slider sliceXSlider = new Slider(0,255,currXSlice);
+		sliceXSlider.valueProperty().addListener(new ChangeListener<Number>() {
+			public void changed(ObservableValue <? extends Number >
+										observable, Number oldValue, Number newValue) {
+
+				currXSlice = newValue.intValue();
+				//System.out.println(currZSlice);
+				//We update our Image
+				GetXSlice(currXSlice,sideImage); //go get the slice image
+				//Because sliceZView (an ImageView) is linked to it, this will automatically update the displayed image in the GUI
+			}
+		});
+
+		ImageView sideView = new ImageView(sideImage);
+		ImageView frontView = new ImageView(frontImage);
+
+
 		//I'll start a grid for you
 		GridPane grid = new GridPane();
         grid.add(sliceZSlider, 0, 0); // Slider at column 0, row 0
+		grid.add(sliceYSlider,1,0);
+		grid.add(sliceXSlider,2,0);
         grid.setHgap(10);
         grid.setVgap(10);
 
         //3. (referring to the 3 things we need to display an image)
       	//we need to add it to the grid
+		//left value is row right is column
 		grid.add(sliceXView, 0, 1); // Slider at column 0, row 1
+		grid.add(frontView,1,1);
+		grid.add(sideView,2,1);
+
 		grid.add(MIPZView, 0, 2); // Slider at column 0, row 1
 		
 
@@ -152,8 +195,8 @@ public class test extends Application {
 
 	public void GetZSlice(int slice, WritableImage image) {
 		//Find the width and height of the image to be process
-		int width = (int)image.getWidth();
-        int height = (int)image.getHeight();
+		int width = (int) image.getWidth();
+		int height = (int) image.getHeight();
 		float val;
 
 		//Get an interface to write to that image memory
@@ -163,14 +206,62 @@ public class test extends Application {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				//I'm going to get the middle slice as an example
-				val = grey[128][y][x];
+				val = grey[currZSlice][y][x];
 
 				//Or uncomment this to make a grey image dependent on the slider value so you can see how the GUI updates
 				//val = (float) slice / 255.f;
 
-				Color color=Color.color(val, val, val);
+				Color color = Color.color(val, val, val);
 				//Apply the new colour
 				image_writer.setColor(x, y, color);
+			}
+		}
+	}
+	public void GetYSlice(int slice, WritableImage image) {
+			//Find the width and height of the image to be process
+			int width = (int)image.getWidth();
+			int height = (int)image.getHeight();
+			float val;
+
+			//Get an interface to write to that image memory
+			PixelWriter image_writer = image.getPixelWriter();
+
+			//Iterate over all pixels
+			for (int z = 0; z < height; z++) {
+				for (int x = 0; x < width; x++) {
+					//I'm going to get the middle slice as an example
+					val = grey[z][currYSlice][x];
+
+					//Or uncomment this to make a grey image dependent on the slider value so you can see how the GUI updates
+					//val = (float) slice / 255.f;
+
+					Color color = Color.color(val, val, val);
+					//Apply the new colour
+					image_writer.setColor(x, z, color);
+				}
+			}
+	}
+	public void GetXSlice(int slice, WritableImage image) {
+		//Find the width and height of the image to be process
+		int width = (int)image.getWidth();
+		int height = (int)image.getHeight();
+		float val;
+
+		//Get an interface to write to that image memory
+		PixelWriter image_writer = image.getPixelWriter();
+
+		//Iterate over all pixels
+		for (int y = 0; y < height; y++) {
+			for (int z = 0; z < width; z++) {
+				//I'm going to get the middle slice as an example
+				val = grey[z][y][currXSlice];
+
+				//Or uncomment this to make a grey image dependent on the slider value so you can see how the GUI updates
+				//val = (float) slice / 255.f;
+
+				Color color = Color.color(val, val, val);
+				//Apply the new colour
+				image_writer.setColor(z, y, color);
 			}
 		}
 	}
